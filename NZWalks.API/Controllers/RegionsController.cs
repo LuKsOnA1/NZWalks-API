@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using NZWalks.API.Data;
 using NZWalks.API.Models.Domain;
+using NZWalks.API.Models.DTOs.Region;
+using NZWalks.API.Repositories;
 
 namespace NZWalks.API.Controllers
 {
@@ -9,35 +10,108 @@ namespace NZWalks.API.Controllers
     [ApiController]
     public class RegionsController : ControllerBase
     {
-        private readonly ApplicationDbContext _db;
+        private readonly IRegionRepository _repository;
+        private readonly IMapper _mapper;
 
-        public RegionsController(ApplicationDbContext db)
+        public RegionsController(IRegionRepository repository, IMapper mapper)
         {
-            _db = db;
+            _repository = repository;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        
-        public IActionResult GetAllRegions()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAllRegions()
         {
-            var regions = new List<Region>
-            {
-                new Region
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Auckland Region",
-                    Code = "AKL",
-                    RegionImageUrl = "https://a.cdn-hotels.com/gdcs/production169/d1777/f6e2ce38-5276-4429-a4e1-a79947606630.jpg"
-                },
-                new Region
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Wellington Region",
-                    Code = "WLG",
-                    RegionImageUrl = "https://tse1.mm.bing.net/th?id=OIP.bdbJrzwNlPq_QbPBLjhcWgHaEo&pid=Api&P=0&h=220"
-                }
-            };
-            return Ok(regions);
+            var regions = await _repository.GetAllAsync();
+
+            var result = _mapper.Map<List<RegionDTO>>(regions);
+
+            return Ok(result);
         }
+
+
+        [HttpGet]
+        [Route("{id:Guid}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetRegionById([FromRoute]Guid id)
+        {
+            var region = await _repository.GetAsync(id);
+            if (region == null)
+            {
+                return NotFound("Region with given id does not exist!");
+            }
+
+            var result = _mapper.Map<RegionDTO>(region);
+
+            return Ok(result);
+        }
+
+
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateRegion([FromBody] CreateRegionRequestDto model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest("Something went wrong. Try again later!");
+            }
+
+            var domainModel = _mapper.Map<Region>(model);
+
+            domainModel = await _repository.CreateAsync(domainModel);
+
+            var regionDTO = _mapper.Map<RegionDTO>(domainModel);
+
+            return CreatedAtAction(nameof(GetRegionById), new { id = regionDTO.Id }, regionDTO );
+        }
+
+
+        [HttpPut]
+        [Route("{id:Guid}")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> UpdateRegion([FromRoute] Guid id, [FromBody] UpdateRegionRequestDto model)
+        {           
+            var regionDomainModel = _mapper.Map<Region>(model);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest("Something went wrong. Try again later!");
+            }
+
+            regionDomainModel = await _repository.UpdateAsync(id, regionDomainModel);
+
+            if (regionDomainModel == null) 
+            {
+                return NotFound();
+            }
+
+
+            var result = _mapper.Map<RegionDTO>(regionDomainModel);
+
+            return Ok(result);
+        }
+
+
+        [HttpDelete]
+        [Route("{id:Guid}")]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> RemoveRegion([FromRoute] Guid id)
+        {
+            var regionDomainModel = await _repository.DeleteAsync(id);
+            
+            if (regionDomainModel == null)
+            {
+                return NotFound("Region with given id does not exist!");
+            }
+
+            return NoContent();
+        }
+
     }
 }
