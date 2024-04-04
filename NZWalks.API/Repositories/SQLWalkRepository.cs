@@ -16,12 +16,40 @@ namespace NZWalks.API.Repositories
 
 
 
-        public async Task<List<Walk>> GetAllAsync()
+        public async Task<List<Walk>> GetAllAsync(string? filetrOn = null, string? filterQuery = null,
+            string? sortBy = null, bool isAscending = true)
         {
-            return await _context.Walks
-                .Include("Difficulty")
-                .Include("Region")
-                .ToListAsync();
+            var walks = _context.Walks.Include("Difficulty").Include("Region").AsQueryable();
+
+            // Filtering
+            if (string.IsNullOrWhiteSpace(filetrOn) == false && string.IsNullOrWhiteSpace(filterQuery) == false)
+            {
+                if(filetrOn.Equals("Name", StringComparison.OrdinalIgnoreCase))
+                {
+                    walks = walks.Where(x => x.Name.Contains(filterQuery));
+                }
+
+                if (filetrOn.Equals("Description", StringComparison.OrdinalIgnoreCase))
+                {
+                    walks = walks.Where(x => x.Description.Contains(filterQuery));
+                }
+            }
+
+            // Sorting
+            if (string.IsNullOrWhiteSpace(sortBy) == false)
+            {
+                if (sortBy.Equals("Name", StringComparison.OrdinalIgnoreCase))
+                {
+                    walks = isAscending ? walks.OrderBy(x => x.Name) : walks.OrderByDescending(x => x.Name);
+                }
+
+                else if (sortBy.Equals("Length", StringComparison.OrdinalIgnoreCase))
+                {
+                    walks = isAscending ? walks.OrderBy(x => x.LengthInKm) : walks.OrderByDescending(x => x.LengthInKm);
+                }
+            }
+
+            return await walks.ToListAsync();
         }
 
         public async Task<Walk?> GetAsync(Guid id)

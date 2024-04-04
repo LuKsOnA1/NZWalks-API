@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using NZWalks.API.CustomActionFilters;
 using NZWalks.API.Models.Domain;
 using NZWalks.API.Models.DTOs.Walk;
 using NZWalks.API.Repositories;
@@ -23,9 +24,10 @@ namespace NZWalks.API.Controllers
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] string? filterOn, [FromQuery] string? filterQuery,
+            [FromQuery] string? sortBy, [FromQuery] bool? isAscending)
         {
-            var domainModel = await _repository.GetAllAsync();
+            var domainModel = await _repository.GetAllAsync(filterOn, filterQuery, sortBy, isAscending ?? true);
 
             var result = _mapper.Map<List<WalkDTO>>(domainModel);
 
@@ -51,14 +53,11 @@ namespace NZWalks.API.Controllers
 
 
         [HttpPost]
+        [ValidateModel]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateWalk([FromBody] CreateWalkRequestDto model)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest("Something went wrong. Try again later!");
-            }
 
             var domainModel = _mapper.Map<Walk>(model);
 
@@ -72,17 +71,14 @@ namespace NZWalks.API.Controllers
 
         [HttpPut]
         [Route("{id:Guid}")]
+        [ValidateModel]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateWalk([FromRoute] Guid id, UpdateWalkRequestDTO model)
         {
-            var domainModel = _mapper.Map<Walk>(model);
 
-            if (!ModelState.IsValid)
-            {
-                return BadRequest("Something went wrong. Try again later!");
-            }
+            var domainModel = _mapper.Map<Walk>(model);           
 
             domainModel = await _repository.UpdateAsync(id, domainModel);
             if (domainModel == null)
