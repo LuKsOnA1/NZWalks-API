@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using NZWalks.API.CustomActionFilters;
 using NZWalks.API.Models.Domain;
 using NZWalks.API.Models.DTOs.Walk;
-using NZWalks.API.Repositories;
+using NZWalks.API.Repositories.API.Abstract;
 
-namespace NZWalks.API.Controllers
+namespace NZWalks.API.Controllers.API
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -25,9 +25,10 @@ namespace NZWalks.API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll([FromQuery] string? filterOn, [FromQuery] string? filterQuery,
-            [FromQuery] string? sortBy, [FromQuery] bool? isAscending)
+            [FromQuery] string? sortBy, [FromQuery] bool? isAscending,
+            [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 100)
         {
-            var domainModel = await _repository.GetAllAsync(filterOn, filterQuery, sortBy, isAscending ?? true);
+            var domainModel = await _repository.GetAllAsync(filterOn, filterQuery, sortBy, isAscending ?? true, pageNumber, pageSize);
 
             var result = _mapper.Map<List<WalkDTO>>(domainModel);
 
@@ -78,7 +79,7 @@ namespace NZWalks.API.Controllers
         public async Task<IActionResult> UpdateWalk([FromRoute] Guid id, UpdateWalkRequestDTO model)
         {
 
-            var domainModel = _mapper.Map<Walk>(model);           
+            var domainModel = _mapper.Map<Walk>(model);
 
             domainModel = await _repository.UpdateAsync(id, domainModel);
             if (domainModel == null)
@@ -102,7 +103,7 @@ namespace NZWalks.API.Controllers
             {
                 return NotFound("Record with given id does not exist!");
             }
-        
+
             return NoContent();
         }
 

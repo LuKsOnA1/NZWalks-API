@@ -1,13 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NZWalks.API.Models.Domain;
 
-namespace NZWalks.API.Data
+namespace NZWalks.API.Data.API
 {
     public class ApplicationDbContext : DbContext
     {
-        public ApplicationDbContext(DbContextOptions dbContextOptions) : base(dbContextOptions)
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> dbContextOptions) : base(dbContextOptions)
         {
-            
+
         }
 
 

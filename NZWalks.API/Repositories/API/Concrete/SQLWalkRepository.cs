@@ -1,8 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using NZWalks.API.Data;
+using NZWalks.API.Data.API;
 using NZWalks.API.Models.Domain;
+using NZWalks.API.Repositories.API.Abstract;
 
-namespace NZWalks.API.Repositories
+namespace NZWalks.API.Repositories.API.Concrete
 {
     public class SQLWalkRepository : IWalkRepository
     {
@@ -17,14 +18,14 @@ namespace NZWalks.API.Repositories
 
 
         public async Task<List<Walk>> GetAllAsync(string? filetrOn = null, string? filterQuery = null,
-            string? sortBy = null, bool isAscending = true)
+            string? sortBy = null, bool isAscending = true, int pageNumber = 1, int pageSize = 100)
         {
             var walks = _context.Walks.Include("Difficulty").Include("Region").AsQueryable();
 
             // Filtering
             if (string.IsNullOrWhiteSpace(filetrOn) == false && string.IsNullOrWhiteSpace(filterQuery) == false)
             {
-                if(filetrOn.Equals("Name", StringComparison.OrdinalIgnoreCase))
+                if (filetrOn.Equals("Name", StringComparison.OrdinalIgnoreCase))
                 {
                     walks = walks.Where(x => x.Name.Contains(filterQuery));
                 }
@@ -49,7 +50,10 @@ namespace NZWalks.API.Repositories
                 }
             }
 
-            return await walks.ToListAsync();
+            // Pagination
+            var skipResults = (pageNumber - 1) * pageSize;
+
+            return await walks.Skip(skipResults).Take(pageSize).ToListAsync();
         }
 
         public async Task<Walk?> GetAsync(Guid id)
