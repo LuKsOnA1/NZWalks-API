@@ -5,6 +5,7 @@ using NZWalks.API.CustomActionFilters;
 using NZWalks.API.Models.Domain;
 using NZWalks.API.Models.DTOs.Region;
 using NZWalks.API.Repositories.API.Abstract;
+using System.Text.Json;
 
 namespace NZWalks.API.Controllers.API
 {
@@ -14,11 +15,13 @@ namespace NZWalks.API.Controllers.API
     {
         private readonly IRegionRepository _repository;
         private readonly IMapper _mapper;
+        private readonly ILogger<RegionsController> _logger;
 
-        public RegionsController(IRegionRepository repository, IMapper mapper)
+        public RegionsController(IRegionRepository repository, IMapper mapper, ILogger<RegionsController> logger)
         {
             _repository = repository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -28,11 +31,20 @@ namespace NZWalks.API.Controllers.API
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetAllRegions()
         {
-            var regions = await _repository.GetAllAsync();
+            try
+            {
+                var regions = await _repository.GetAllAsync();
 
-            var result = _mapper.Map<List<RegionDTO>>(regions);
+                var result = _mapper.Map<List<RegionDTO>>(regions);
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                throw;
+            }
+            
         }
 
 
